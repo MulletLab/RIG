@@ -5,11 +5,11 @@ This respository is an implemenation of the LERRG workflow as a series of Bash s
 
 Our implementation consists of 5 "pipelines":
 
-Naive Reduced Representation qsub (NRRB)
-Informed Reduced Representation qsub (IRRB)
-Naive Whole Genome qsub (NWGB)
-Initial Informed Whole Genome qsub (IIWGB)
-Informed Whole Genome qsub (IWGB)
+  Naive Reduced Representation qsub (NRRB)
+  Informed Reduced Representation qsub (IRRB)
+  Naive Whole Genome qsub (NWGB)
+  Initial Informed Whole Genome qsub (IIWGB)
+  Informed Whole Genome qsub (IWGB)
 
 Each pipeline has a directory. Those who are interested in the annotations corresponding to the manuscript that we use for hard filtering and VQSR will find those in the following:
 
