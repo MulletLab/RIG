@@ -1,7 +1,7 @@
-LERRG
+RIG
 =====
 
-This respository is an implemenation of the LERRG workflow as a series of Bash scripts. It is not portable since many architecture and user specific values are hardcoded in. Users should seriously consider using a Scala-based implementation using GATK's Queue before resorting to Bash. We resorted to Bash due to Queue and our compute cluster not playing nicely together. We provide this code as is, without warranty or guarantee.
+This respository is an implemenation of the RIG workflow as a series of Bash scripts. It is not portable since many architecture and user specific values are hardcoded in. Users should seriously consider using a Scala-based implementation using GATK's Queue before resorting to Bash. We resorted to Bash due to Queue and our compute cluster not playing nicely together. We provide this code as is, without warranty or guarantee.
 
 Our implementation consists of 5 "pipelines":
 
