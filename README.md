@@ -21,5 +21,5 @@ Description of file organization
 
 Each of the five pipelines has a wrapper script that launches job scripts, tracks job status, and manages job submission. All input files are designated by changing the wrapper script. The jobs that a wrapper launches are stored in the corresponding jobScripts directory. Some pipelines have a util directory containing some code for post-processing (e.g. converting an experimental cross to an R/qtl-formatted .ods file, or filling in missing genotypes with Beagle). Pipelines also contain an intervals directory that contains intervals used to either parallelize job submission by contig (for the whole genome pipelines) or to only target a predetermined subset of the genome (for the reduced representation pipelines). The data directories contain various preprocessing scripts responsible for converting "raw" fastq files to files suitable for their respective pipeline wrapper.
 
-Contact Ryan McCormick at ryanabashbash@tamu.edu with questions or comments.
+Contact Ryan McCormick at ryanabashbash@tamu.edu with questions or comments regarding the Bash implementation or RIG design. The GATK forums are also a great place for finding answers: http://gatkforums.broadinstitute.org/ 
 
