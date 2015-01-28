@@ -11,11 +11,11 @@ Our implementation consists of 5 "pipelines". They are comprised of a pipeline w
 4. Initial Informed Whole Genome qsub (IIWGB)
 5. Informed Whole Genome qsub (IWGB)
 
-Each pipeline has a directory. Those who are interested in the annotations corresponding to the manuscript that we use for hard filtering and VQSR will find those in the following:
+The current version for each pipeline can be found in its respective directory. Those interested in the annotations and software versions corresponding to the original RIG manuscript that were used for hard filtering and VQSR at the time of writing will find those in the 2015_manuscriptParameters directory:
 
-And those interested in the specific software and versions (e.g. BWA) can find those in the following:
-
-
+1. Naive sorghum RR population hard filtering:
+2. Naive Arabidopsis WGS hard filtering:
+3. Informed sorghum WGS recalibration:
 
 Description of file organization
 =====
