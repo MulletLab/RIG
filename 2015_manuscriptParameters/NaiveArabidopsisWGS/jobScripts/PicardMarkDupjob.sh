@@ -1,0 +1,9 @@
+
+PICARDPATH=$1
+INPUTFILE=$2
+OUTPUTFILE=$3
+
+java -jar ${PICARDPATH}/MarkDuplicates.jar \
+        INPUT=${INPUTFILE} \
+	METRICS_FILE=${OUTPUTFILE}.dedupMetrics \
+        OUTPUT=${OUTPUTFILE} 
