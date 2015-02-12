@@ -1,0 +1,17 @@
+
+MEMORY=$1
+GATKPATH=$2
+NUMTHREADSGATK=$3
+REFERENCE=$4
+INTERVALFILE=$5
+INPUTFILE=$6
+OUTPUTFILE=$7
+
+module load java1.7.0
+java -Xmx${MEMORY} -jar ${GATKPATH} \
+	-T RealignerTargetCreator \
+	-R ${REFERENCE} \
+	-L ${INTERVALFILE} \
+	-I ${INPUTFILE} \
+	-o ${OUTPUTFILE} \
+	-nt ${NUMTHREADSGATK} 

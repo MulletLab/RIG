@@ -1,0 +1,20 @@
+MEMORY=$1
+GATKPATH=$2
+NUMTHREADSGATK=$3
+REFERENCE=$4
+INTERVALS=$5
+RECALTABLE=$6
+INPUT=$7
+OUTPUT=$8
+
+module load java1.7.0
+
+java -XX:+UseSerialGC -Xmx${MEMORY} -jar ${GATKPATH} \
+	-T PrintReads \
+	-R ${REFERENCE} \
+	-L ${INTERVALS} \
+	-I ${INPUT} \
+	-BQSR ${RECALTABLE} \
+	-o ${OUTPUT} \
+					
+
