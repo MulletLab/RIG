@@ -5,7 +5,7 @@ GATKNUMTHREADS=7  #Number of threads used by some of the GATK's walkers
 GATKNUMCPUTHREADS=7  #Number of cpu threads used by some of the GATK's walkers
 JAVAMEMORY="32g"   #Amount of memory allocated to Java
 
-GROUPID="BTx623xIS3620c_family"  #Group ID used to name output files
+GROUPID="BTx623xIS3620C_family_01-02-14"  #Group ID used to name output files
 
 #File paths
 #The parent directory of samples will be used as the read group, so place samples from the same read group in the same directory.
@@ -23,6 +23,7 @@ WGSREFERENCE=NULL #/data/ryanabashbash/GATK_pipeline/ReferenceCollections/WGSref
 INTERVALFILE=/data/ryanabashbash/GATK_pipeline/ReferenceCollections/intervals/sorghum/Sbi3/reducedRepresentation/NgoMIVintervals.intervals
 OUTPUTPATH=/data/ryanabashbash/GATK_pipeline/RAD_seq/Families/BTx623xIS3620c_01-02-14/results/
 LOGPATH=/data/ryanabashbash/GATK_pipeline/RAD_seq/Families/BTx623xIS3620c_01-02-14/log/
+TMPPATH=/data/ryanabashbash/tmp/
 
 REFERENCEFASTA=/data/ryanabashbash/Sbi3_reference/reference/Sbi3.fasta #There also needs to be a fasta index file (.fai) in the same directory as this reference.
 PICARDPATH=/data/ryanabashbash/Downloads/picard-tools-1.128/picard.jar  #This is the path of the directory containing the Picard tools
