@@ -1,6 +1,6 @@
 #!/bin/bash
 ############
-#Informed Whole Genome Pipeline
+#Informed Reduced Representation Pipeline
 #Written by Ryan McCormick
 #02/03/15
 #Texas A&M University
@@ -8,7 +8,7 @@
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="NRRB2001"
+PIPELINEVERSION="IRRB2001"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Number threads for BWA:\t\t${NUMTHREADSBWA}"
@@ -38,12 +38,15 @@ checkExecutable ${BWAPATH} "BWA executable"
 checkBWAindex ${BWAINDEX} "BWA index"
 checkDirectory ${OUTPUTPATH} "Output"
 checkDirectory ${LOGPATH} "Logging"
-checkDirectory ${TMPPATH} "Temoprary files"
+checkDirectory ${TMPPATH} "Temporary files"
 checkFile ${INTERVALFILE} "Intervals"
 checkFile ${PICARDPATH} "Picard's .jar"
 checkFile ${GATKPATH} "GATK's .jar"
 checkFile ${REFERENCEFASTA} "Reference fasta file"
 checkFile ${REFERENCEFASTA}.fai "Index for reference fasta file"
+checkFile ${FAMILYREFERENCE} "Reference VCF from families"
+checkFile ${POPULATIONREFERENCE} "Referene VCF from populations"
+checkFile ${WGSREFERENCE} "Reference VCF from WGS"
 
 #Check for the input FASTQ files
 let TOTALFASTQ=0
@@ -77,6 +80,7 @@ rm -f ${LOGPATH}*.*[oe]*
 #Resolve individual files
 for dir in ${FASTQDIRS[@]}
 do
+	LANEFILEARRAY=()
 	FILES=$dir*.fastq*
 	for file in $FILES
 	do
@@ -120,28 +124,77 @@ do
 		job=`extractJobId ${LOGPATH}`
 		JOBARRAY+=($job)
 		echo "IndelRealignment job submitted as $job."
-
-		#HaplotypeCaller isn't parallelized here due to thread concurrency issues that causes crashes.
-        	qsub -N HaploCall_${sampleID} -hold_jid Realigner_${sampleID} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}HaploCall_${sampleID}.o -e ${LOGPATH}HaploCall_${sampleID}.e ${RIGPATH}jobScripts/HaploCallerjob.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.realigned.bam ${OUTPUTPATH}${sampleID}.GVCF.vcf >& ${LOGPATH}qsub.tmp
-		
-                job=`extractJobId ${LOGPATH}`
-		JOBARRAY+=($job)
-		echo "HaplotypeCaller job submitted as $job."
+		LANEFILEARRAY+=(${OUTPUTPATH}${sampleID}.realigned.bam)
 
 		fileRemovalArray2[0]=${OUTPUTPATH}${sampleID}.sorted.bam
         	fileRemovalArray2[1]=${OUTPUTPATH}${sampleID}.sorted.bai
-        	fileRemovalArray2[2]=${OUTPUTPATH}${sampleID}.realigned.bam
-        	fileRemovalArray2[3]=${OUTPUTPATH}${sampleID}.realigned.bai
-        	fileRemovalArray2[4]=${OUTPUTPATH}${sampleID}.intervals
+        	fileRemovalArray2[2]=${OUTPUTPATH}${sampleID}.intervals
 
-		qsub -N Cleanup2_${sampleID} -hold_jid HaploCall_${sampleID} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates2_${sampleID}.o -e ${LOGPATH}CleanupIntermediates2_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray2[@]} >& ${LOGPATH}qsub.tmp
+		qsub -N Cleanup2_${sampleID} -hold_jid Realigner_${sampleID} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates2_${sampleID}.o -e ${LOGPATH}CleanupIntermediates2_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray2[@]} >& ${LOGPATH}qsub.tmp
 
         	job=`extractJobId ${LOGPATH}`
         	JOBARRAY+=($job)
         	echo "Cleanup2 job submitted as $job."
 
-		DEPENDENCYSTRING=${DEPENDENCYSTRING},HaploCall_${sampleID},Cleanup2_${sampleID}
+		DEPENDENCYSTRING=${DEPENDENCYSTRING},Cleanup2_${sampleID}
 	done
+
+	checkJobsInArrayForCompletion ${JOBARRAY[@]}
+	
+	qsub -N BaseRecalibration_${parentDir} -hold_jid ${DEPENDENCYSTRING#,} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}BaseRecalibration_${parentDir}.o -e ${LOGPATH}BaseRecalibration_${parentDir}.e ${RIGPATH}jobScripts/BaseRecalibrationMultiSampleLanejob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${WGSREFERENCE} ${OUTPUTPATH}${parentDir}-realigned.recal.table ${LANEFILEARRAY[@]} >& ${LOGPATH}qsub.tmp
+        
+	job=`extractJobId ${LOGPATH}`
+	JOBARRAY+=($job)
+	echo "BaseRecalibration job submitted as $job."
+
+	DEPENDENCYSTRING=""
+	RECALIBRATEDARRAY=()
+	REALIGNEDREMOVALARRAY=()
+	for file in ${LANEFILEARRAY[@]}
+	do
+		checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
+		stripPath=${file##*/}
+		sampleID=${stripPath%.realigned.bam}
+		qsub -N ApplyRecalibration_${sampleID} -hold_jid BaseRecalibration_${parentDir} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}ApplyRecalibration_${sampleID}.o -e ${LOGPATH}ApplyRecalibration_${sampleID}.e ${RIGPATH}jobScripts/ApplyRecalibrationjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${parentDir}-realigned.recal.table ${file} ${OUTPUTPATH}${sampleID}.recalibrated.bam >& ${LOGPATH}qsub.tmp
+
+		job=`extractJobId ${LOGPATH}`
+		JOBARRAY+=($job)
+		echo "ApplyRecalibration job submitted as $job."
+		RECALIBRATEDARRAY+=(${OUTPUTPATH}${sampleID}.recalibrated.bam)
+		REMOVALARRAY+=(${OUTPUTPATH}${sampleID}.realigned.bam)
+		REMOVALARRAY+=(${OUTPUTPATH}${sampleID}.realigned.bai)
+		REMOVALARRAY+=(${OUTPUTPATH}${sampleID}.recalibrated.bam)
+		REMOVALARRAY+=(${OUTPUTPATH}${sampleID}.recalibrated.bai)
+		DEPENDENCYSTRING=${DEPENDENCYSTRING},ApplyRecalibration_${sampleID}
+	done
+
+        qsub -N BaseRecalibration2_${parentDir} -hold_jid ${DEPENDENCYSTRING#,} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}BaseRecalibration2_${parentDir}.o -e ${LOGPATH}BaseRecalibration2_${parentDir}.e ${RIGPATH}jobScripts/BaseRecalibrationMultiSampleLanejob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${WGSREFERENCE} ${OUTPUTPATH}${parentDir}-recalibrated.recal.table ${RECALIBRATEDARRAY[@]} >& ${LOGPATH}qsub.tmp
+
+	job=`extractJobId ${LOGPATH}`
+	JOBARRAY+=($job)
+	echo "BaseRecalibration2 job submitted as $job."
+
+	DEPENDENCYSTRING=""
+        for file in ${RECALIBRATEDARRAY[@]}
+	do
+		checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
+		stripPath=${file##*/}
+		sampleID=${stripPath%.recalibrated.bam}
+		#Due to thread safety crashes, the HaplotypeCaller is set to use only 1 processor.
+		qsub -N HaploCall_${sampleID} -hold_jid BaseRecalibration2_${parentDir} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}HaploCall_${sampleID}.o -e ${LOGPATH}HaploCall_${sampleID}.e ${RIGPATH}jobScripts/HaploCallerjob.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.recalibrated.bam ${OUTPUTPATH}${sampleID}.GVCF.vcf >& ${LOGPATH}qsub.tmp 
+
+		job=`extractJobId ${LOGPATH}`
+		JOBARRAY+=($job)
+		echo "HaplotypeCaller job submitted as $job."
+
+		DEPENDENCYSTRING=${DEPENDENCYSTRING},HaploCall_${sampleID}
+	done   
+        qsub -N Cleanup_${sampleID} -hold_jid ${DEPENDENCYSTRING#,} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}Cleanup_${sampleID}.o -e ${LOGPATH}Cleanup_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${REMOVALARRAY[@]} >& ${LOGPATH}qsub.tmp
+
+	job=`extractJobId ${LOGPATH}`
+	JOBARRAY+=($job)
+	echo "Cleanup job submitted as $job."
+
 done
 
 checkJobsInArrayForCompletion ${JOBARRAY[@]}
@@ -192,4 +245,3 @@ done
 
 qsub -N JointGenotype -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
-qsub -N FilterVariants -hold_jid JointGenotype -l mem_free=1g -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}FilterVariants.o -e ${LOGPATH}FilterVariants.e ${RIGPATH}jobScripts/FilterVariantsjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}.vcf
