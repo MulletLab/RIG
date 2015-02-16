@@ -1,18 +1,17 @@
 
 MEMORY=$1
 GATKPATH=$2
-GATKNUMTHREADS=$3
-REFERENCE=$4
+REFERENCE=$3
+INTERVALS=$4
 INPUTFILE=$5
 OUTPUTFILE=$6
-
-MEMORY="1g"
 
 module load java1.7.0
 
 java -Xmx${MEMORY} -jar ${GATKPATH} \
         -T SelectVariants \
 	-R ${REFERENCE} \
+	-L ${INTERVALS} \
         --variant ${INPUTFILE} \
         -o ${OUTPUTFILE%.*}_tmp.vcf \
         --restrictAllelesTo BIALLELIC \
@@ -32,17 +31,15 @@ if (substr($0, 1, 6) == "#CHROM") {
 AFThresholdMin="0.05" #Minor allele frequency
 AFThresholdMax="0.95" 
 ANThreshold=$(echo "(0.6*${numSamples}*2)/1" | bc) # Number of alleles called; divide by one to round the float
-DPfailMax=$(echo "200*${numSamples}" | bc)
 
 java -Xmx${MEMORY} -jar ${GATKPATH} \
         -T VariantFiltration \
         -R ${REFERENCE}  \
+	-L ${INTERVALS} \
         -V ${OUTPUTFILE%.*}_tmp.vcf \
         -o ${OUTPUTFILE%.*}_tmp2.vcf \
         --filterExpression "DP < 10" \
         --filterName "DPfailMin" \
-	--filterExpression "DP > ${DPfailMax}" \
-	--filterName "DPfailMax" \
         --filterExpression "QD < 5.0" \
         --filterName "QDfail" \
         --filterExpression "MQ < 30.0" \
@@ -51,14 +48,17 @@ java -Xmx${MEMORY} -jar ${GATKPATH} \
         --filterName "MQRankSumfail" \
         --filterExpression "BaseQRankSum < -10.0" \
         --filterName "BaseQRankSumfail" \
-        --filterExpression "FS > 10.0" \
-        --filterName "FSfail" \
-        --filterExpression "ReadPosRankSum < -5.0" \
-        --filterName "ReadPosRSfail"
+	--filterExpression "AN < ${ANThreshold}" \
+	--filterName "ANfail" \
+	--filterExpression "AF < ${AFThresholdMin}" \
+	--filterName "AFfailMin" \
+	--filterExpression "AF > ${AFThresholdMax}" \
+	--filterName "AFfailMax"
 
 java -Xmx${MEMORY} -jar ${GATKPATH} \
         -T SelectVariants \
         -R ${REFERENCE} \
+	-L ${INTERVALS} \
         --variant ${OUTPUTFILE%.*}_tmp2.vcf \
         -o ${OUTPUTFILE%.*}_filtered_failedExcluded.vcf \
         --excludeFiltered
@@ -66,6 +66,7 @@ java -Xmx${MEMORY} -jar ${GATKPATH} \
 java -Xmx${MEMORY} -jar ${GATKPATH} \
         -T SelectVariants \
         -R ${REFERENCE} \
+	-L ${INTERVALS} \
         --variant ${OUTPUTFILE%.*}_tmp2.vcf \
         -o ${OUTPUTFILE%.*}_filtered.vcf
 

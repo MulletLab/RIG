@@ -1,6 +1,6 @@
 #!/bin/bash
 ############
-#Informed Whole Genome Pipeline
+#Naive Reduced Representation Pipeline
 #Written by Ryan McCormick
 #02/03/15
 #Texas A&M University
@@ -38,7 +38,7 @@ checkExecutable ${BWAPATH} "BWA executable"
 checkBWAindex ${BWAINDEX} "BWA index"
 checkDirectory ${OUTPUTPATH} "Output"
 checkDirectory ${LOGPATH} "Logging"
-checkDirectory ${TMPPATH} "Temoprary files"
+checkDirectory ${TMPPATH} "Temporary files"
 checkFile ${INTERVALFILE} "Intervals"
 checkFile ${PICARDPATH} "Picard's .jar"
 checkFile ${GATKPATH} "GATK's .jar"
@@ -192,4 +192,3 @@ done
 
 qsub -N JointGenotype -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
-qsub -N FilterVariants -hold_jid JointGenotype -l mem_free=1g -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}FilterVariants.o -e ${LOGPATH}FilterVariants.e ${RIGPATH}jobScripts/FilterVariantsjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}.vcf

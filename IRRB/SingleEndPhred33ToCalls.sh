@@ -245,4 +245,3 @@ done
 
 qsub -N JointGenotype -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
-qsub -N FilterVariants -hold_jid JointGenotype -l mem_free=1g -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}FilterVariants.o -e ${LOGPATH}FilterVariants.e ${RIGPATH}jobScripts/FilterVariantsjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}.vcf
