@@ -1,7 +1,7 @@
 RIG
 =====
 
-This respository is an implemenation of the RIG workflow as a series of Bash scripts. Users should seriously consider a Scala-based implementation using GATK's Queue before resorting to Bash. We resorted to Bash due to Queue and our compute cluster not playing nicely together. We provide this code as is, without warranty or guarantee. Users interested in porting this to their architecture would likely need to change the way resources are requested via qsub, and change how logging files are parsed by the utility functions (e.g. currently a user name is hardcoded into the utility functions). See the publication for additional information on the workflow: http://g3journal.org/content/early/2015/02/13/g3.115.017012.full.pdf+html
+This respository is an implementation of the RIG workflow as a series of Bash scripts. Users should seriously consider a Scala-based implementation using GATK's Queue before resorting to Bash. We resorted to Bash due to Queue and our compute cluster not playing nicely together. We provide this code as is, without warranty or guarantee. Users interested in porting this to their architecture would likely need to change the way resources are requested via qsub, and change how logging files are parsed by the utility functions (e.g. currently a user name is hardcoded into the utility functions). See the publication for additional information on the workflow: http://g3journal.org/content/early/2015/02/13/g3.115.017012.full.pdf+html
 
 The current implementation consists of a configuration file, a group of pipelines, and the jobs called by the pipelines. The pipelines are:
 
