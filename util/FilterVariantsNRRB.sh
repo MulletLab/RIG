@@ -1,10 +1,10 @@
 
-MEMORY=$1
-GATKPATH=$2
-REFERENCE=$3
-INTERVALS=$4
-INPUTFILE=$5
-OUTPUTFILE=$6
+INPUTFILE=/data/ryanabashbash/GATK_pipeline/RAD_seq/Families/BTx623xIS3620c_01-02-14/results/BTx623xIS3620C_family_01-02-14_NRRB2001_unfiltered.vcf
+OUTPUTFILE=/data/ryanabashbash/GATK_pipeline/RAD_seq/Families/BTx623xIS3620c_01-02-14/results/BTx623xIS3620C_family_01-02-14_NRRB2001.vcf
+MEMORY="1g"
+GATKPATH=/data/ryanabashbash/Downloads/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar
+REFERENCE=/data/ryanabashbash/Sbi3_reference/reference/Sbi3.fasta
+INTERVALS=/data/ryanabashbash/GATK_pipeline/ReferenceCollections/intervals/sorghum/Sbi3/reducedRepresentation/NgoMIVintervals.intervals
 
 module load java1.7.0
 
