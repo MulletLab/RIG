@@ -7,6 +7,7 @@ from collections import defaultdict
 def usage():
     sys.stderr.write("\tpullVCFvariantsGivenList.py vcfFile.vcf variantFile.tsv\n")
     sys.stderr.write("\tExample usage: pullVCFvariantsGivenList.py variants.vcf markerList.tsv 2\n")
+    sys.stderr.write("\tThis assumes chromosome and super contig IDs of the format \"chromosome_\" and \"super\" in the first column of a tsv.")
     sys.exit()
 
 try:
@@ -24,7 +25,7 @@ def pullVariants():
     dict_chrPos = defaultdict(list)
 
     for i in range(len(li_tsv)):
-        if i == 0:
+        if i == 0:   #Skipping the header line
             continue
         try:
             li_contigPos = li_tsv[i][0].split("_")
