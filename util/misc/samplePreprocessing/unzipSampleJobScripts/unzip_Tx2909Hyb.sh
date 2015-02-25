@@ -21,6 +21,7 @@ if (substr(readSequence, 1, 5) == "CCGGC") {
 }'
 
 currentLane="008_lane6"
+COHORTID="Tx2909Hyb_008-6"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-6/*87*-*[0-9]*R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};
