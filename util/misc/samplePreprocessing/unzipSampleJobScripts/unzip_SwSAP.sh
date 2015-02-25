@@ -23,6 +23,7 @@ if (substr(readSequence, 1, 5) == "CCGGC") {
 
 
 currentLane="006_lane8"
+COHORTID="SwSAP_006-8"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/006_05-14-14/DLVR214039Mul-8/*R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};
@@ -33,6 +34,7 @@ gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.}"
 
 currentLane="008_lane4"
+COHORTID="SwSAP_008-4"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-4/*PI*R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};
@@ -50,8 +52,6 @@ fileName=${COHORTID}_\${id2}.fastq;
 awk '$AWK_BODY' ${PARENTDIR}/$currentLane/{/.} > ${PARENTDIR}/$currentLane/\$fileName;
 gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.}"
-
-
 
 
 

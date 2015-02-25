@@ -23,6 +23,7 @@ if (substr(readSequence, 1, 5) == "CCGGC") {
 }'
 
 currentLane="005_lane2"
+COHORTID="Misc_005-2"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/01-02-14_BTx623xIS3620c-R07018xR07020-etal/DLVR2130119Mul-2/21_BTx623_RIL_Parent_GGTCTATGTCAC_R1.fastq.zip | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 unzip {} -d ${PARENTDIR}/$currentLane;
@@ -32,6 +33,7 @@ gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.}"
 
 currentLane="005_lane2"
+COHORTID="Misc_005-2"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/01-02-14_BTx623xIS3620c-R07018xR07020-etal/DLVR2130119Mul-2/20_IS3620c_RIL_Parent_GTGCTTGCTATA_R1.fastq.zip | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 unzip {} -d ${PARENTDIR}/$currentLane;
@@ -41,6 +43,7 @@ gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.}"
 
 currentLane="007_lane7"
+COHORTID="Misc_007-7"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/007_10-02-14/DLVR214140Mul-7/92_BTx642_Parent_CCATGGACGCAT_R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};
@@ -50,6 +53,7 @@ gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.};"
 
 currentLane="007_lane7"
+COHORTID="Misc_007-7"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/007_10-02-14/DLVR214140Mul-7/93_Tx7000_Parent_TCTTGGATCGGA_R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};
@@ -59,6 +63,7 @@ gzip ${PARENTDIR}/$currentLane/\$fileName;
 rm ${PARENTDIR}/$currentLane/{/.};"
 
 currentLane="008_lane5"
+COHORTID="Misc_008-5"
 ls /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-5/202_B3_JB_ATGCCAAGCGCT_R1.fastq.gz | parallel --gnu -j${NUMTHREADS} --eta \
 "echo {.};
 gunzip -c {} > ${PARENTDIR}/$currentLane/{/.};

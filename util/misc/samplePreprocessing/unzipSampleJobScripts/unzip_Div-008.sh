@@ -21,7 +21,7 @@ if (substr(readSequence, 1, 5) == "CCGGC") {
 }'
 
 currentLane="008_lane8"
-
+COHORTID="Div_008-8"
 mv /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-8/141_308439_CTGAGCTTCTCA_R1.fastq.gz /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-8/141_308439-1_CTGAGCTTCTCA_R1.fastq.gz
 
 mv /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-8/149_308439_ATGATCCACGGC_R1.fastq.gz /data/ryanabashbash/raw_data/restriction_site_sequencing/008_11-18-14/DLVR214197Mul-8/149_308439-2_ATGATCCACGGC_R1.fastq.gz

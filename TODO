@@ -1,0 +1,3 @@
+Distribute CombineGVCF jobs such that jobs of 50-200 files are submitted in parallel, then these intermediates are merged (iteratively or in parallel).
+
+Identify source of Java thread safety crash in HaplotypeCaller, or scatter serial HaplotypeCaller jobs by intervals and then gather with CombineGVCF.
