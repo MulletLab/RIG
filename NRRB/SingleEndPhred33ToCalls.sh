@@ -2,13 +2,13 @@
 ############
 #Naive Reduced Representation Pipeline
 #Written by Ryan McCormick
-#02/03/15
+#03/02/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="NRRB2001"
+PIPELINEVERSION="NRRB2002"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Number threads for BWA:\t\t${NUMTHREADSBWA}"
@@ -32,7 +32,6 @@ do
 done
 
 #Perform some checks on inputs:
-
 echo -e "\n"
 checkExecutable ${BWAPATH} "BWA executable"
 checkBWAindex ${BWAINDEX} "BWA index"
@@ -67,7 +66,6 @@ then
 fi
 
 
-#Finished checking pipeline inputs. Proceed with pipeline
 echo -e "\n\tInitial checks passed. Proceeding with pipeline.\n"
 
 DEPENDENCYSTRING=""
@@ -160,36 +158,53 @@ do
 	GVCFARRAY+=($file)
 done
 
-lastFile="NULL"
 rangeLength=50
-GVCFiter=1
-while [ ${#GVCFARRAY[@]} -gt 1 ]
+rangeBegin=0
+rangeEnd=0
+let "rangeEnd=${rangeLength}-1"
+fileArrayLength=${#GVCFARRAY[@]}
+bool_EndOfArrayProcessed="False"
+COMBINEJOBARRAY=()
+INTERMEDIATESTOMERGE=()
+while [ ${bool_EndOfArrayProcessed} = "False" ]
 do
-	qsub -N CombineSamples_${GVCFiter} -hold_jid ${DEPENDENCYSTRING#,} -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}CombineSamples_${GVCFiter}.o -e ${LOGPATH}CombineSamples_${GVCFiter}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${GVCFiter}.popGVCF.vcf ${GVCFARRAY[@]:0:${rangeLength}} >& ${LOGPATH}qsub.tmp
+	checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
 
-	job=`extractJobId ${LOGPATH}`
+	qsub -N CombineSamples_${rangeBegin}-${rangeEnd} -hold_jid ${DEPENDENCYSTRING#,} -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}CombineSamples_${rangeBegin}-${rangeEnd}.o -e ${LOGPATH}CombineSamples_${rangeBegin}-${rangeEnd}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${rangeBegin}-${rangeEnd}.popGVCF.vcf ${GVCFARRAY[@]:${rangeBegin}:${rangeLength}} >& ${LOGPATH}qsub.tmp
+
+        job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
-	echo "CombineSamples on iteration ${GVCFiter} submitted as $job"
+	INTERMEDIATESTOMERGE+=(${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${rangeBegin}-${rangeEnd}.popGVCF.vcf)
+	echo "CombineSamples on indices ${rangeBegin}-${rangeEnd} submitted as $job"
+	
+	qsub -N CleanupGVCFs_${rangeBegin}-${rangeEnd} -hold_jid CombineSamples_${rangeBegin}-${rangeEnd} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${rangeBegin}-${rangeEnd}.o -e ${LOGPATH}CleanupGVCFs_${rangeBegin}-${rangeEnd}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${GVCFARRAY[@]:${rangeBegin}:${rangeLength}} >& ${LOGPATH}qsub.tmp
 
-	qsub -N CleanupGVCFs_${GVCFiter} -hold_jid CombineSamples_${GVCFiter} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${GVCFiter}.o -e ${LOGPATH}CleanupGVCFs_${GVCFiter}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${GVCFARRAY[@]:0:${rangeLength}} >& ${LOGPATH}qsub.tmp
-
-	job=`extractJobId ${LOGPATH}`
+        job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
-	echo "Cleanup on iteration ${GVCFiter} submitted as $job"
-	let "GVCFiter=${GVCFiter}+1"
+	echo "Cleanup on indices ${rangeBegin}-${rangeEnd} submitted as $job"
 
+	if [ ${rangeEnd} -gt ${fileArrayLength} ]
+	then
+		bool_EndOfArrayProcessed="True"
+	fi
+	let "rangeBegin=${rangeBegin}+${rangeLength}"
+	let "rangeEnd=${rangeEnd}+${rangeLength}"
 
-	checkJobsInArrayForCompletion ${COMBINEJOBARRAY[@]}
-
-	GVCFFILES=${OUTPUTPATH}*GVCF.vcf
-	GVCFARRAY=()
-	for file in $GVCFFILES
-	do
-		GVCFARRAY+=($file)
-		lastFile=${file}
-	done
 done
 
+checkJobsInArrayForCompletion ${COMBINEJOBARRAY[@]}
+
+qsub -N CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
+
+job=`extractJobId ${LOGPATH}`
+echo "CombineSamples on ${#INTERMEDIATESTOMERGE[@]} intermediates submitted as $job"
+
+qsub -N CleanupGVCFs_Intermediates -hold_jid CombineSamples_Intermediates -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_Intermediates.o -e ${LOGPATH}CleanupGVCFs_Intermediates.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
+
+job=`extractJobId ${LOGPATH}`
+echo "Cleanup on intermediate files submitted as $job"
+
+
 #This isn't parallelized due to low file handle limits on system
-qsub -N JointGenotype -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
+qsub -N JointGenotype -hold_jid CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
