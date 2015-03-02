@@ -260,5 +260,5 @@ echo "Cleanup on intermediate files submitted as $job"
 
 
 #This isn't parallelized due to low file handle limits on system
-qsub -N JointGenotype -hold_jid CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${lastFile} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
+qsub -N JointGenotype -hold_jid CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
