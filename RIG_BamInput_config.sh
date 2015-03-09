@@ -1,6 +1,5 @@
 #RIG Configuration file
 
-NUMTHREADSBWA=7   #Number of threads used by BWA for alignment
 GATKNUMTHREADS=7  #Number of threads used by some of the GATK's walkers
 GATKNUMCPUTHREADS=7  #Number of cpu threads used by some of the GATK's walkers
 JAVAMEMORY="32g"   #Amount of memory allocated to Java
@@ -25,9 +24,6 @@ LOGPATH=/data/ryanabashbash/GATK_pipeline/WGS/log_009_12-18-14/
 TMPPATH=/data/ryanabashbash/tmp/
 
 REFERENCEFASTA=/data/ryanabashbash/Sbi1_reference/reference/sbi1.fasta #There also needs to be a fasta index file (.fai) in the same directory as this reference.
-PICARDPATH=/data/ryanabashbash/Downloads/picard-tools-1.128/picard.jar  #This is the path of the directory containing the Picard tools
-BWAPATH=/data/ryanabashbash/Downloads/bwa-0.7.12/bwa  #This is the path of the BWA executable
-BWAINDEX=/data/ryanabashbash/Sbi3_reference/Sbi3_BWAindex/Sbi3  #This is the path of the reference index suffix
 GATKPATH=/data/ryanabashbash/Downloads/GenomeAnalysisTK-3.3-0/GenomeAnalysisTK.jar #This is the path of the GATK .jar file
 
 RIGPATH=/data/ryanabashbash/GATK_pipeline/src/RIG_src/

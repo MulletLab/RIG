@@ -11,11 +11,7 @@
 PIPELINEVERSION="IWGB1001"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
-echo -e "Number threads for BWA:\t\t${NUMTHREADSBWA}"
 echo -e "Group ID:\t\t\t${GROUPID}"
-echo -e "BWA binary path:\t\t${BWAPATH}"
-echo -e "BWA index path:\t\t\t${BWAINDEX}"
-echo -e "Picard path:\t\t\t${PICARDPATH}"
 echo -e "Output path:\t\t\t${OUTPUTPATH}"
 echo -e "Log path:\t\t\t${LOGPATH}"
 echo -e "Memory allocated to the JVM:\t${JAVAMEMORY}"
@@ -34,13 +30,10 @@ done
 
 
 echo -e "\n"
-checkExecutable ${BWAPATH} "BWA executable"
-checkBWAindex ${BWAINDEX} "BWA index"
 checkDirectory ${OUTPUTPATH} "Output"
 checkDirectory ${LOGPATH} "Logging"
 checkDirectory ${INTERVALLISTDIR} "Directory with *.intervals files"
 checkFile ${INTERVALFILE} "Single interval file with all intervals"
-checkFile ${PICARDPATH} "Picard's .jar"
 checkFile ${GATKPATH} "GATK's .jar"
 checkFile ${REFERENCEFASTA} "Reference fasta file"
 checkFile ${REFERENCEFASTA}.fai "Index for reference fasta file"
