@@ -43,9 +43,6 @@ checkFile ${PICARDPATH} "Picard's .jar"
 checkFile ${GATKPATH} "GATK's .jar"
 checkFile ${REFERENCEFASTA} "Reference fasta file"
 checkFile ${REFERENCEFASTA}.fai "Index for reference fasta file"
-checkFile ${FAMILYREFERENCE} "Reference VCF from families"
-checkFile ${POPULATIONREFERENCE} "Referene VCF from populations"
-checkFile ${WGSREFERENCE} "Reference VCF from WGS"
 
 #Check for the input FASTQ files
 let TOTALFASTQ=0
