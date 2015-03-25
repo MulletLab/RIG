@@ -1,3 +1,5 @@
 Distribute CombineGVCF jobs such that jobs of 50-200 files are submitted in parallel, then these intermediates are merged (iteratively or in parallel). - Finished for RR pipelines 03/02/15; do for WGS pipelines when done refactoring them.
 
+Swap hardcoded username for $USER variable in util functions
+
 Identify source of Java thread safety crash in HaplotypeCaller, or scatter serial HaplotypeCaller jobs by intervals and then gather with CombineGVCF.
