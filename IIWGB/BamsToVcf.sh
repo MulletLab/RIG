@@ -1,14 +1,14 @@
 #!/bin/bash
 ############
-#Informed Whole Genome Pipeline
+#Initial Informed Whole Genome Pipeline
 #Written by Ryan McCormick
-#03/08/15
+#03/27/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="IWGB1001"
+PIPELINEVERSION="IIWGB1002"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Group ID:\t\t\t${GROUPID}"
@@ -63,6 +63,7 @@ fi
 echo -e "\n\tInitial checks passed. Proceeding with pipeline.\n"
 DEPENDENCYSTRING=""
 JOBARRAY=()
+SAMPLEARRAY=()
 #Clean the log?
 rm -f ${LOGPATH}*.*[oe]*
 #Resolve individual files
@@ -74,6 +75,7 @@ do
 	do
 		stripPath=${file##*/}
 		sampleID=${stripPath%%.*}
+		SAMPLEARRAY+=($sampleID)
 		echo -e "\n\tOn sample ${sampleID}\n"
 		
 		#Note that jobs are being submitted here a little differently than usual. 
@@ -107,52 +109,36 @@ then
 	cat ${LOGPATH}failedJobs.txt
 fi
 
-GVCFFILES=${OUTPUTPATH}*.GVCF.vcf
-GVCFARRAY=()
-for file in $GVCFFILES
-do
-	GVCFARRAY+=($file)
-done
-
-rangeLength=50
-rangeBegin=0
-rangeEnd=0
-let "rangeEnd=${rangeLength}-1"
-fileArrayLength=${#GVCFARRAY[@]}
-bool_EndOfArrayProcessed="False"
 COMBINEJOBARRAY=()
 INTERMEDIATESTOMERGE=()
-
-while [ ${bool_EndOfArrayProcessed} = "False" ]
+for sampleID in ${SAMPLEARRAY[@]}
 do
+	SAMPLEGVCFFILES=${OUTPUTPATH}${sampleID}*.GVCF.vcf
+	SAMPLEGVCFARRAY=()
+	for file in $SAMPLEGVCFFILES
+	do
+	        SAMPLEGVCFARRAY+=($file)
+	done
 	checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
 
-	qsub -N CombineSamples_${rangeBegin}-${rangeEnd} -hold_jid ${DEPENDENCYSTRING#,} -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}CombineSamples_${rangeBegin}-${rangeEnd}.o -e ${LOGPATH}CombineSamples_${rangeBegin}-${rangeEnd}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${rangeBegin}-${rangeEnd}.popGVCF.vcf ${GVCFARRAY[@]:${rangeBegin}:${rangeLength}} >& ${LOGPATH}qsub.tmp
-
-        job=`extractJobId ${LOGPATH}`
-        COMBINEJOBARRAY+=($job)
-        INTERMEDIATESTOMERGE+=(${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${rangeBegin}-${rangeEnd}.popGVCF.vcf)
-        echo "CombineSamples on indices ${rangeBegin}-${rangeEnd} submitted as $job"	
-	
-        qsub -N CleanupGVCFs_${rangeBegin}-${rangeEnd} -hold_jid CombineSamples_${rangeBegin}-${rangeEnd} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${rangeBegin}-${rangeEnd}.o -e ${LOGPATH}CleanupGVCFs_${rangeBegin}-${rangeEnd}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${GVCFARRAY[@]:${rangeBegin}:${rangeLength}} >& ${LOGPATH}qsub.tmp
+	qsub -N CombineSamples_${sampleID} -hold_jid ${DEPENDENCYSTRING#,} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_${sampleID}.o -e ${LOGPATH}CombineSamples_${sampleID}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
-	echo "Cleanup on indices ${rangeBegin}-${rangeEnd} submitted as $job"
+	INTERMEDIATESTOMERGE+=(${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf)
+	echo "CombineSamples for sample ${sampleID} submitted as $job"
 
+	qsub -N CleanupGVCFs_${sampleID} -hold_jid CombineSamples_${sampleID} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${sampleID}.o -e ${LOGPATH}CleanupGVCFs_${sampleID}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
 
-	if [ ${rangeEnd} -gt ${fileArrayLength} ]
-	then
-		bool_EndOfArrayProcessed="True"
-	fi
-	let "rangeBegin=${rangeBegin}+${rangeLength}"
-	let "rangeEnd=${rangeEnd}+${rangeLength}"
+	job=`extractJobId ${LOGPATH}`
+	COMBINEJOBARRAY+=($job)
+	echo "Cleanup for sample ${sampleID} submitted as $job"
 
 done
 
 checkJobsInArrayForCompletion ${COMBINEJOBARRAY[@]}
 
-qsub -N CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=${GATKNUMTHREADS} -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
+qsub -N CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
 
 job=`extractJobId ${LOGPATH}`
 echo "CombineSamples on ${#INTERMEDIATESTOMERGE[@]} intermediates submitted as $job"
