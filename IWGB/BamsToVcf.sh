@@ -2,13 +2,13 @@
 ############
 #Informed Whole Genome Pipeline
 #Written by Ryan McCormick
-#03/27/15
+#04/01/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="IWGB1002"
+PIPELINEVERSION="IWGB1003"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Group ID:\t\t\t${GROUPID}"
@@ -17,6 +17,7 @@ echo -e "Log path:\t\t\t${LOGPATH}"
 echo -e "Memory allocated to the JVM:\t${JAVAMEMORY}"
 echo -e "GATK path:\t\t\t${GATKPATH}"
 echo -e "Number of threads for GATK:\t${GATKNUMTHREADS}"
+echo -e "Additional options passed to each qsub call:\t${GLOBALQSUBOPTIONS}"
 echo -e "GATK reference FASTA:\t\t${REFERENCEFASTA}"
 echo -e "Interval List Directory:\t\t\t${INTERVALLISTDIR}"
 echo -e "Interval file with all intervals:\t\t\t${INTERVALFILE}"
@@ -88,7 +89,7 @@ do
 			interval=${interval%%.*}
 			checkJobQueueLimit 75 600 #Arg1 = jobs allowed, Arg2 = wait period.
 
-			haplocallJobString="qsub -N HaploCall_${sampleID}_${interval} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}HaplotypeCaller_${sampleID}_${interval}.o -e ${LOGPATH}HaplotypeCaller_${sampleID}_${interval}.e ${RIGPATH}/jobScripts/HaploCallerjob.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${intervalList} ${file} ${OUTPUTPATH}${sampleID}_${interval}.GVCF.vcf >& ${LOGPATH}qsub.tmp"
+			haplocallJobString="qsub -N HaploCall_${sampleID}_${interval} ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}HaplotypeCaller_${sampleID}_${interval}.o -e ${LOGPATH}HaplotypeCaller_${sampleID}_${interval}.e ${RIGPATH}/jobScripts/HaploCallerjob.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${intervalList} ${file} ${OUTPUTPATH}${sampleID}_${interval}.GVCF.vcf >& ${LOGPATH}qsub.tmp"
 
 			eval ${haplocallJobString}
 
@@ -121,14 +122,14 @@ do
 	done
 	checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
 
-	qsub -N CombineSamples_${sampleID} -hold_jid ${DEPENDENCYSTRING#,} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_${sampleID}.o -e ${LOGPATH}CombineSamples_${sampleID}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
+	qsub -N CombineSamples_${sampleID} -hold_jid ${DEPENDENCYSTRING#,} ${GLOBALQSUBOPTIONS} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_${sampleID}.o -e ${LOGPATH}CombineSamples_${sampleID}.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
 	INTERMEDIATESTOMERGE+=(${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf)
 	echo "CombineSamples for sample ${sampleID} submitted as $job"
 
-        qsub -N CleanupGVCFs_${sampleID} -hold_jid CombineSamples_${sampleID} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${sampleID}.o -e ${LOGPATH}CleanupGVCFs_${sampleID}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
+        qsub -N CleanupGVCFs_${sampleID} -hold_jid CombineSamples_${sampleID} ${GLOBALQSUBOPTIONS} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${sampleID}.o -e ${LOGPATH}CleanupGVCFs_${sampleID}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
@@ -138,19 +139,19 @@ done
         
 checkJobsInArrayForCompletion ${COMBINEJOBARRAY[@]}
 
-qsub -N CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
+qsub -N CombineSamples_Intermediates ${GLOBALQSUBOPTIONS} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
 
 job=`extractJobId ${LOGPATH}`
 echo "CombineSamples on ${#INTERMEDIATESTOMERGE[@]} intermediates submitted as $job"
 
-qsub -N CleanupGVCFs_Intermediates -hold_jid CombineSamples_Intermediates -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_Intermediates.o -e ${LOGPATH}CleanupGVCFs_Intermediates.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
+qsub -N CleanupGVCFs_Intermediates -hold_jid CombineSamples_Intermediates ${GLOBALQSUBOPTIONS} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_Intermediates.o -e ${LOGPATH}CleanupGVCFs_Intermediates.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
 
 job=`extractJobId ${LOGPATH}`
 echo "Cleanup on intermediate files submitted as $job"
 
 
 #This isn't parallelized due to low file handle limits on system
-qsub -N JointGenotype -hold_jid CombineSamples_Intermediates -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
+qsub -N JointGenotype -hold_jid CombineSamples_Intermediates ${GLOBALQSUBOPTIONS} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
 	
 #Code that we may reconsider if non parallelized HC doesn't work out.

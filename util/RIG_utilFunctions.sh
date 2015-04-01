@@ -1,7 +1,7 @@
 #!/bin/bash
 #Utility functions for the RIG pipelines.
 #Written by Ryan McCormick
-#02/03/15
+#04/01/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
@@ -95,11 +95,11 @@ rm ${1}failedJobs.txt
 ALLSUCCESSFUL="True"
 for indJob in ${@:2}
 do
-	exitStatus=`qacct -o ryanabashbash -j $indJob | grep exit_status | awk '{print $2}'`
+	exitStatus=`qacct -o $USER -j $indJob | grep exit_status | awk '{print $2}'`
 	if [ $exitStatus = "1" ]
 	then
 		ALLSUCCESSFUL="False"
-		jobName=`qacct -o ryanabashbash -j $indJob | grep jobname | awk '{print $2}'`
+		jobName=`qacct -o $USER -j $indJob | grep jobname | awk '{print $2}'`
 		echo Job $indJob named $jobName failed. >> ${1}failedJobs.txt
 	fi
 done
