@@ -2,13 +2,13 @@
 ############
 #Informed Whole Genome Pipeline
 #Written by Ryan McCormick
-#02/03/15
+#04/01/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="IWGB1001"
+PIPELINEVERSION="IWGB1003"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Number threads for BWA:\t\t${NUMTHREADSBWA}"
@@ -21,6 +21,7 @@ echo -e "Log path:\t\t\t${LOGPATH}"
 echo -e "Memory allocated to the JVM:\t${JAVAMEMORY}"
 echo -e "GATK path:\t\t\t${GATKPATH}"
 echo -e "Number of threads for GATK:\t${GATKNUMTHREADS}"
+echo -e "Additional options passed to each qsub call:\t${GLOBALQSUBOPTIONS}"
 echo -e "GATK reference FASTA:\t\t${REFERENCEFASTA}"
 echo -e "Interval file:\t\t\t${INTERVALFILE}"
 echo -e "Pipeline version:\t\t${PIPELINEVERSION}"
@@ -88,7 +89,7 @@ do
         RG="@RG\tID:${sampleID}_phred64\tSM:${sampleID}\tPL:ILLUMINA-HiSeq-2000\tLB:${sampleID}_phred64\tPU:${sampleID}_phred64"
         echo -e "\nStarting sample $SAMName with read group: $RG"
 
-        qsub -N BWA_${sampleID}_phred64 -l num_threads=${NUMTHREADSBWA} -o ${LOGPATH}BWA_${sampleID}_phred64.o -e ${LOGPATH}BWA_${sampleID}_phred64.e ${RIGPATH}/jobScripts/BWAjobPEinterleaved.sh ${BWAPATH} ${NUMTHREADSBWA} $RG ${BWAINDEX} ${dir}${sampleID}_phred64.fastq.gz ${OUTPUTPATH}${sampleID}_phred64.sam >& ${LOGPATH}qsub.tmp
+        qsub -N BWA_${sampleID}_phred64 ${GLOBALQSUBOPTIONS} -l num_threads=${NUMTHREADSBWA} -o ${LOGPATH}BWA_${sampleID}_phred64.o -e ${LOGPATH}BWA_${sampleID}_phred64.e ${RIGPATH}/jobScripts/BWAjobPEinterleaved.sh ${BWAPATH} ${NUMTHREADSBWA} $RG ${BWAINDEX} ${dir}${sampleID}_phred64.fastq.gz ${OUTPUTPATH}${sampleID}_phred64.sam >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
@@ -97,31 +98,31 @@ do
 	RG="@RG\tID:${sampleID}_phred33\tSM:${sampleID}\tPL:ILLUMINA-HiSeq-2000\tLB:${sampleID}_phred33\tPU:${sampleID}_phred33"
 	echo -e "\nStarting sample $SAMName with read group: $RG"
 
-	qsub -N BWA_${sampleID}_phred33 -l num_threads=${NUMTHREADSBWA} -o ${LOGPATH}BWA_${sampleID}_phred33.o -e ${LOGPATH}BWA_${sampleID}_phred33.e ${RIGPATH}jobScripts/BWAjobPEinterleaved.sh ${BWAPATH} ${NUMTHREADSBWA} $RG ${BWAINDEX} ${dir}${sampleID}_phred33.fastq.gz ${OUTPUTPATH}${sampleID}_phred33.sam >& ${LOGPATH}qsub.tmp
+	qsub -N BWA_${sampleID}_phred33 ${GLOBALQSUBOPTIONS} -l num_threads=${NUMTHREADSBWA} -o ${LOGPATH}BWA_${sampleID}_phred33.o -e ${LOGPATH}BWA_${sampleID}_phred33.e ${RIGPATH}jobScripts/BWAjobPEinterleaved.sh ${BWAPATH} ${NUMTHREADSBWA} $RG ${BWAINDEX} ${dir}${sampleID}_phred33.fastq.gz ${OUTPUTPATH}${sampleID}_phred33.sam >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "BWA phred33 job submitted as $job."
 
-        qsub -N PicardSort_${sampleID} -hold_jid BWA_${sampleID}_phred64 -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}PicardSort_${sampleID}.o -e ${LOGPATH}PicardSort_${sampleID}.e ${RIGPATH}jobScripts/PicardSortjob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}_phred64.sam ${OUTPUTPATH}${sampleID}_phred64.bam >& ${LOGPATH}qsub.tmp
+        qsub -N PicardSort_${sampleID} -hold_jid BWA_${sampleID}_phred64 ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}PicardSort_${sampleID}.o -e ${LOGPATH}PicardSort_${sampleID}.e ${RIGPATH}jobScripts/PicardSortjob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}_phred64.sam ${OUTPUTPATH}${sampleID}_phred64.bam >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "Picard Sort job submitted as $job."
        
-        qsub -N FixQuals_${sampleID} -hold_jid PicardSort_${sampleID} -l num_threads=1 -o ${LOGPATH}FixQuals_${sampleID}.o -e ${LOGPATH}FixQuals_${sampleID}.e ${RIGPATH}jobScripts/FixQualsjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${OUTPUTPATH}${sampleID}_phred64.bam ${OUTPUTPATH}${sampleID}_qualsFixed.bam >& ${LOGPATH}qsub.tmp
+        qsub -N FixQuals_${sampleID} -hold_jid PicardSort_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=1 -o ${LOGPATH}FixQuals_${sampleID}.o -e ${LOGPATH}FixQuals_${sampleID}.e ${RIGPATH}jobScripts/FixQualsjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${OUTPUTPATH}${sampleID}_phred64.bam ${OUTPUTPATH}${sampleID}_qualsFixed.bam >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
         JOBARRAY+=($job)
         echo "FixQuals job submitted as $job."
 
-        qsub -N Picard_${sampleID} -hold_jid FixQuals_${sampleID},BWA_${sampleID}_phred33 -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Picard_${sampleID}.o -e ${LOGPATH}Picard_${sampleID}.e ${RIGPATH}jobScripts/PicardMergejob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}_phred33.sam ${OUTPUTPATH}${sampleID}_qualsFixed.bam ${OUTPUTPATH}${sampleID}.merged.sorted.bam >& ${LOGPATH}qsub.tmp
+        qsub -N Picard_${sampleID} -hold_jid FixQuals_${sampleID},BWA_${sampleID}_phred33 ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Picard_${sampleID}.o -e ${LOGPATH}Picard_${sampleID}.e ${RIGPATH}jobScripts/PicardMergejob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}_phred33.sam ${OUTPUTPATH}${sampleID}_qualsFixed.bam ${OUTPUTPATH}${sampleID}.merged.sorted.bam >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "Picard Merge job submitted as $job."
 
-	qsub -N PicardMarkDup_${sampleID} -hold_jid Picard_${sampleID} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}PicardMarkDup_${sampleID}.o -e ${LOGPATH}PicardMarkDup_${sampleID}.e ${RIGPATH}jobScripts/PicardMarkDupjob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}.merged.sorted.bam ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam >& ${LOGPATH}qsub.tmp
+	qsub -N PicardMarkDup_${sampleID} -hold_jid Picard_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}PicardMarkDup_${sampleID}.o -e ${LOGPATH}PicardMarkDup_${sampleID}.e ${RIGPATH}jobScripts/PicardMarkDupjob.sh ${PICARDPATH} ${OUTPUTPATH}${sampleID}.merged.sorted.bam ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
         JOBARRAY+=($job)
@@ -130,25 +131,25 @@ do
 	fileRemovalArray1[0]=${OUTPUTPATH}${sampleID}_phred64.sam
 	fileRemovalArray1[1]=${OUTPUTPATH}${sampleID}_phred33.sam
 
-	qsub -N Cleanup1_${sampleID} -hold_jid PicardMarkDup_${sampleID} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates1_${sampleID}.o -e ${LOGPATH}CleanupIntermediates1_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray1[@]} >& ${LOGPATH}qsub.tmp
+	qsub -N Cleanup1_${sampleID} -hold_jid PicardMarkDup_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates1_${sampleID}.o -e ${LOGPATH}CleanupIntermediates1_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray1[@]} >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "Cleanup1 job submitted as $job."
 
-	qsub -N Target_${sampleID} -hold_jid PicardMarkDup_${sampleID} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Target_${sampleID}.o -e ${LOGPATH}Target_${sampleID}.e ${RIGPATH}jobScripts/TargetPhred33job.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam ${OUTPUTPATH}${sampleID}.intervals >& ${LOGPATH}qsub.tmp
+	qsub -N Target_${sampleID} -hold_jid PicardMarkDup_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Target_${sampleID}.o -e ${LOGPATH}Target_${sampleID}.e ${RIGPATH}jobScripts/TargetPhred33job.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam ${OUTPUTPATH}${sampleID}.intervals >& ${LOGPATH}qsub.tmp
 	
 	job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "TargetIdentification job submitted as $job."
 	
-	qsub -N Realigner_${sampleID} -hold_jid Target_${sampleID} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Realigner_${sampleID}.o -e ${LOGPATH}Realigner_${sampleID}.e ${RIGPATH}jobScripts/RealignerPhred33job.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam ${OUTPUTPATH}${sampleID}.intervals ${OUTPUTPATH}${sampleID}.realigned.bam >& ${LOGPATH}qsub.tmp
+	qsub -N Realigner_${sampleID} -hold_jid Target_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=${JAVAMEMORY} -o ${LOGPATH}Realigner_${sampleID}.o -e ${LOGPATH}Realigner_${sampleID}.e ${RIGPATH}jobScripts/RealignerPhred33job.sh ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.dedupped.sorted.bam ${OUTPUTPATH}${sampleID}.intervals ${OUTPUTPATH}${sampleID}.realigned.bam >& ${LOGPATH}qsub.tmp
 	
 	job=`extractJobId ${LOGPATH}`
 	JOBARRAY+=($job)
 	echo "IndelRealignment job submitted as $job."
 
-	qsub -N BaseRecalibration_${sampleID} -hold_jid Realigner_${sampleID} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}BaseRecalibration_${sampleID}.o -e ${LOGPATH}BaseRecalibration_${sampleID}.e ${RIGPATH}jobScripts/BaseRecalibrationSingleSampleLanejob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.realigned.bam ${WGSREFERENCE} ${OUTPUTPATH}${sampleID}.recalibrated.bam >& ${LOGPATH}qsub.tmp
+	qsub -N BaseRecalibration_${sampleID} -hold_jid Realigner_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=${GATKNUMTHREADS} -l mem_free=${JAVAMEMORY} -o ${LOGPATH}BaseRecalibration_${sampleID}.o -e ${LOGPATH}BaseRecalibration_${sampleID}.e ${RIGPATH}jobScripts/BaseRecalibrationSingleSampleLanejob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${sampleID}.realigned.bam ${WGSREFERENCE} ${OUTPUTPATH}${sampleID}.recalibrated.bam >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
         JOBARRAY+=($job)
@@ -166,7 +167,7 @@ do
         fileRemovalArray2[9]=${OUTPUTPATH}${sampleID}.realigned.bai
         fileRemovalArray2[10]=${OUTPUTPATH}${sampleID}.intervals
 
-	qsub -N Cleanup2_${sampleID} -hold_jid BaseRecalibration_${sampleID} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates2_${sampleID}.o -e ${LOGPATH}CleanupIntermediates2_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray2[@]} >& ${LOGPATH}qsub.tmp
+	qsub -N Cleanup2_${sampleID} -hold_jid BaseRecalibration_${sampleID} ${GLOBALQSUBOPTIONS} -l num_threads=1 -l mem_free=1g -o ${LOGPATH}CleanupIntermediates2_${sampleID}.o -e ${LOGPATH}CleanupIntermediates2_${sampleID}.e ${RIGPATH}jobScripts/CleanupIntermediatesjob.sh ${fileRemovalArray2[@]} >& ${LOGPATH}qsub.tmp
 
         job=`extractJobId ${LOGPATH}`
         JOBARRAY+=($job)

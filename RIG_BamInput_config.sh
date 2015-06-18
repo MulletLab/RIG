@@ -3,6 +3,7 @@
 GATKNUMTHREADS=7  #Number of threads used by some of the GATK's walkers
 GATKNUMCPUTHREADS=7  #Number of cpu threads used by some of the GATK's walkers
 JAVAMEMORY="32g"   #Amount of memory allocated to Java
+GLOBALQSUBOPTIONS="-q normal.q"  #String that gets passed to every qsub call
 
 GROUPID="BTx623_Sbi1_009_12-18-14"  #Group ID used to name output files
 

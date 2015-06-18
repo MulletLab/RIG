@@ -1,6 +1,6 @@
 #!/bin/bash
 ############
-#Informed Whole Genome Pipeline
+#Initial Informed Whole Genome Pipeline
 #Written by Ryan McCormick
 #04/01/15
 #Texas A&M University
@@ -8,7 +8,7 @@
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="IWGB1003"
+PIPELINEVERSION="IIWGB1003"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Group ID:\t\t\t${GROUPID}"
@@ -118,7 +118,7 @@ do
 	SAMPLEGVCFARRAY=()
 	for file in $SAMPLEGVCFFILES
 	do
-		SAMPLEGVCFARRAY+=($file)
+	        SAMPLEGVCFARRAY+=($file)
 	done
 	checkJobQueueLimit 75 300 #Arg1 = jobs allowed, Arg2 = wait period.
 
@@ -129,14 +129,14 @@ do
 	INTERMEDIATESTOMERGE+=(${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_${sampleID}.popGVCF.vcf)
 	echo "CombineSamples for sample ${sampleID} submitted as $job"
 
-        qsub -N CleanupGVCFs_${sampleID} -hold_jid CombineSamples_${sampleID} ${GLOBALQSUBOPTIONS} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${sampleID}.o -e ${LOGPATH}CleanupGVCFs_${sampleID}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
+	qsub -N CleanupGVCFs_${sampleID} -hold_jid CombineSamples_${sampleID} ${GLOBALQSUBOPTIONS} -l mem_free=1g -l num_threads=1 -o ${LOGPATH}CleanupGVCFs_${sampleID}.o -e ${LOGPATH}CleanupGVCFs_${sampleID}.e ${RIGPATH}jobScripts/CleanupGVCFsjob.sh ${SAMPLEGVCFARRAY[@]} >& ${LOGPATH}qsub.tmp
 
 	job=`extractJobId ${LOGPATH}`
 	COMBINEJOBARRAY+=($job)
-	echo "Cleanup for sample ${sampleID} submitted as $job"	
+	echo "Cleanup for sample ${sampleID} submitted as $job"
 
-done    
-        
+done
+
 checkJobsInArrayForCompletion ${COMBINEJOBARRAY[@]}
 
 qsub -N CombineSamples_Intermediates ${GLOBALQSUBOPTIONS} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}CombineSamples_Intermediates.o -e ${LOGPATH}CombineSamples_Intermediates.e ${RIGPATH}jobScripts/CombineGVCFjob.sh ${JAVAMEMORY} ${GATKPATH} ${GATKNUMTHREADS} ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${INTERMEDIATESTOMERGE[@]} >& ${LOGPATH}qsub.tmp
@@ -153,7 +153,8 @@ echo "Cleanup on intermediate files submitted as $job"
 #This isn't parallelized due to low file handle limits on system
 qsub -N JointGenotype -hold_jid CombineSamples_Intermediates ${GLOBALQSUBOPTIONS} -l mem_free=${JAVAMEMORY} -l num_threads=1 -o ${LOGPATH}JointGenotype.o -e ${LOGPATH}JointGenotype.e ${RIGPATH}jobScripts/JointGenotypejob.sh ${TMPPATH} ${JAVAMEMORY} ${GATKPATH} 1 ${REFERENCEFASTA} ${INTERVALFILE} ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_merged.popGVCF.vcf ${OUTPUTPATH}${GROUPID}_${PIPELINEVERSION}_unfiltered.vcf
 
-	
+
+
 #Code that we may reconsider if non parallelized HC doesn't work out.
 :<<"BlockToResubmitFailedHaploCallerJobs"
 #This is a deprecated section to resubmit HaplotypeCaller jobs that failed due to the crashes from multithreading.
