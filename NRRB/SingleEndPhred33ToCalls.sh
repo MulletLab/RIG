@@ -2,13 +2,13 @@
 ############
 #Naive Reduced Representation Pipeline
 #Written by Ryan McCormick
-#04/01/15
+#10/02/15
 #Texas A&M University
 #This is provided without warranty, and is unlikely to work right out of the box
 #due to architecture differences between clusters and job submission systems.
 ###########
 
-PIPELINEVERSION="NRRB2003"
+PIPELINEVERSION="NRRB2004"
 
 echo -e "\n\tEntering the pipeline with the following inputs:\n"
 echo -e "Number threads for BWA:\t\t${NUMTHREADSBWA}"
@@ -164,6 +164,7 @@ rangeBegin=0
 rangeEnd=0
 let "rangeEnd=${rangeLength}-1"
 fileArrayLength=${#GVCFARRAY[@]}
+let "fileArrayLengthZeroIndex=${fileArrayLength}-1"
 bool_EndOfArrayProcessed="False"
 COMBINEJOBARRAY=()
 INTERMEDIATESTOMERGE=()
@@ -184,7 +185,7 @@ do
 	COMBINEJOBARRAY+=($job)
 	echo "Cleanup on indices ${rangeBegin}-${rangeEnd} submitted as $job"
 
-	if [ ${rangeEnd} -gt ${fileArrayLength} ]
+	if [ ${rangeEnd} -ge ${fileArrayLengthZeroIndex} ]
 	then
 		bool_EndOfArrayProcessed="True"
 	fi
