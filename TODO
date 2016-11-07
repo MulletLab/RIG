@@ -1,1 +1,3 @@
-
+11/07/16
+   * Add downstream processing with vcftools (e.g., depth per sample, filter on GQ).
+   * Remove SimpleODSPy and update to modern ODS writing library.
